@@ -5,7 +5,7 @@
   #2) Determine average bottom temperature of core habitat within each yr
   
 # Author: Erin Fedewa
-#Last update: 1/5/2023
+#Last update: 7/31/2025 by ERR
 
 #NOTES:
 #Given that stations differed pre 1980, only 1980+ dataset was used to calculate 
