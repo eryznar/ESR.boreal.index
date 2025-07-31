@@ -1,6 +1,6 @@
   # produce ice cover time series for Bering (55-64N, 180-160W)
   
-
+source("./Scripts/load_libs_params.R")
   ## load and process ------------------------
   
   # note that there are separate time series for 1950-1978 and 1979-present
@@ -217,6 +217,59 @@
     
     # save ERA5
     write.csv(ice.means2, "./Output/ice.csv", row.names = F)
+  
+## NEW CODE ----
+    nc <- nc_open("./Data/ERA5_ice_2024.nc")
+    
+    ice <- ncvar_get(nc, "siconc", verbose = F) 
+    
+    # load and process 1950-1978
+    tidync("./Data/ERA5_ice_1950-1978.nc") %>%
+      hyper_filter(longitude = longitude >= -180 & longitude <= -165,
+                   latitude = latitude >= 55 & latitude <= 63) %>%
+      activate("siconc") %>%
+      hyper_tibble() %>%
+      mutate(year = lubridate::year(time),
+             month = lubridate::month(time),
+             latitude = as.numeric(as.character(latitude)),
+             longitude = as.numeric(as.character(longitude))) %>%
+      filter(month %in% c(1:4)) %>% #months != Jan-Apr
+      group_by(year,  month)  %>%
+      reframe(value= mean(siconc)) -> ice.1950_1978
+    
+    # load and process 1979-2022
+    tidync("./Data/ERA5_ice_1979-2022.nc") %>%
+      hyper_filter(longitude = longitude >= -180 & longitude <= -165,
+                   latitude = latitude >= 55 & latitude <= 63) %>%
+      activate("siconc") %>%
+      hyper_tibble() %>%
+      mutate(year = lubridate::year(time),
+             month = lubridate::month(time),
+             latitude = as.numeric(as.character(latitude)),
+             longitude = as.numeric(as.character(longitude))) %>%
+      filter(month %in% c(1:4)) %>% #months != Jan-Apr
+      # mutate(name = case_when((month %in% 1:2) ~ "Jan-Feb",
+      #                           TRUE ~ "Mar-Apr")) %>%
+      group_by(year,  month)  %>%
+      reframe(value= mean(siconc)) -> ice.1979_2022
     
     
-   
+    # load and process 2023-2024
+    tidync("./Data/ERA5_ice_2023-2024.nc") %>%
+      hyper_filter(longitude = longitude >= -180 & longitude <= -165,
+                   latitude = latitude >= 55 & latitude <= 63) %>%
+      activate("siconc") %>%
+      hyper_tibble() %>%
+      mutate(year = lubridate::year(time),
+             month = lubridate::month(time),
+             latitude = as.numeric(as.character(latitude)),
+             longitude = as.numeric(as.character(longitude))) %>%
+      filter(month %in% c(1:4)) %>% #months != Jan-Apr
+      group_by(year,  month)  %>%
+      reframe(value= mean(siconc)) -> ice.2023_2024
+      
+    # load and process new data
+    old.ice <- read.csv("./Output/ice.csv")
+     
+    
+ 
