@@ -14,6 +14,8 @@ library(mgcv)
 library(MARSS)
 library(corrplot)
 library(crabpack)
+library(tidync)
+library(ecmwfr)
 
 # SET THEME ------
 theme_set(theme_bw())
