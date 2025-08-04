@@ -1,21 +1,35 @@
 source("./Scripts/load_libs_params.R")
 
-dat <- read.csv(paste0("Y:/KOD_Survey/EBS Shelf/", current.year, "/Tech Memo/Data/HAUL_NEWTIMESERIES.csv"))
+dat <- read.csv(paste0("Y:/KOD_Survey/EBS Shelf/", 2024, "/Tech Memo/Data/HAUL_NEWTIMESERIES.csv"))
+dat25 <- read.csv("C:/Users/emily.ryznar/Downloads/EBS2025_HAUL.csv") %>%
+          mutate(SURVEY_YEAR = substr(CRUISE, 1, 4),
+                 MID_LATITUDE = ((START_LATITUDE - END_LATITUDE)/2) + START_LATITUDE,
+                 MID_LONGITUDE = ((START_LONGITUDE - END_LONGITUDE)/2 + START_LONGITUDE)) %>%
+          mutate(GIS_STATION = STATIONID) %>%
+        dplyr::select(colnames(dat)) %>%
+        rbind(dat, .)
 
-head(dat)
+dat <- dat25
+# ## EBS catch and haul data ----
+# cp_dat <- crabpack::get_specimen_data(species = "SNOW", 
+#                                       region = "EBS", 
+#                                       years = c(1975:2019, 2021:current.year),
+#                                       channel = "API")
+# cp_dat <- cp_dat$haul
 
 # load immature opilio core habitat
-imm_area <- read.csv("./Output/imm_area_50perc.csv")
+imm_area <- read.csv(paste0("./Output/", prev.year, "/imm_area_50perc.csv"))
 
 # plot what we have
 plot.dat <- dat %>%
   select(SURVEY_YEAR, GIS_STATION, MID_LATITUDE, MID_LONGITUDE) %>%
   rename(LATITUDE = MID_LATITUDE,
-         LONGITUDE = MID_LONGITUDE)
+         LONGITUDE = MID_LONGITUDE,
+         STATION_ID = GIS_STATION)
 
 # add imm_area
 add_area <- imm_area %>%
-  select(GIS_STATION) %>%
+  select(STATION_ID) %>%
   mutate(core = "core")
 
 plot.dat <- left_join(plot.dat, add_area)
@@ -36,17 +50,17 @@ check80 <- plot.dat %>%
   filter(SURVEY_YEAR == 1980,
          core == "core")
 
-whats.this <- intersect(unique(check79$GIS_STATION), unique(check80$GIS_STATION)) # none
+whats.this <- intersect(unique(check79$STATION_ID), unique(check80$STATION_ID)) # none
 
 # let's use a list of core stations sampled in 1977 to generate our bottom temp index
 use <- plot.dat %>%
   filter(SURVEY_YEAR == 1975,
           core == "core")
   
-use.stations <- use$GIS_STATION
+use.stations <- use$STATION_ID
 
 plot.dat <- plot.dat %>%
-  filter(GIS_STATION %in% use.stations)
+  filter(STATION_ID %in% use.stations)
 
 ggplot(filter(plot.dat, SURVEY_YEAR <= 1982), aes(LONGITUDE, LATITUDE, color = core)) +
   geom_point() +
@@ -117,8 +131,9 @@ diag(pred) <- FALSE # and of course, drop self-correlations - make the diagonal 
 colnames(pred) <- colnames(dat.julian) <- str_remove_all(colnames(pred), "-")
 
 imp <- mice(data = dat.julian, method = "norm.predict", m=100)#, pred = pred) #Using Bayesian linear regression method
-saveRDS(imp, "./Output/station_julian_day_imputations.RDS")
-imp <- readRDS("./Output/station_julian_day_imputations.RDS")
+saveRDS(imp, paste0("./Output/", current.year, "/station_julian_day_imputations.RDS"))
+imp <- readRDS(paste0("./Output/", current.year, "/station_julian_day_imputations.RDS"))
+o.imp <- readRDS(paste0("./Output/", prev.year, "/station_julian_day_imputations.RDS"))
 
 str(imp$imp)
 
@@ -126,7 +141,7 @@ View(complete(imp))
 
 # are there NAs in complete(imp)?
 
-check <- is.na(complete(imp))
+check <- is.na(complete(o.imp))
 
 sum(check)
 check <- which(is.na(complete(imp)))
@@ -147,7 +162,7 @@ for(i in 1:100){
   
   imputed.day <- rbind(imputed.day,
                          data.frame(imputation = i,
-                                    year = c(1975:2019, 2021, 2022:current.year),
+                                    year = c(1975:2019, 2021:current.year),
                                     mean.day = rowMeans(temp)))
 }
   
@@ -157,10 +172,11 @@ imputed.day <- imputed.day %>%
 
 # all are identical!
 
-plot.dat <- data.frame(year = c(1975:2019, 2021, 2022:current.year),
+plot.dat <- data.frame(year = c(1975:2019, 2021:current.year),
                        imputed.mean.day = rowMeans(imputed.day[,2:101]))
   
 add.dat <- dat %>%
+  mutate(year = as.numeric(as.character(year))) %>%
   group_by(year) %>%
   dplyr::summarize(observed.mean.day = mean(julian, na.rm = T))
 
@@ -189,8 +205,9 @@ check
 colnames(dat.temp) <- str_remove_all(colnames(dat.temp), "-")
 
 imp <- mice(data = dat.temp, method = "norm.predict", m=100)#, pred = pred) #Using Bayesian linear regression method
-saveRDS(imp, "./output/station_bottom_temp_imputations.RDS")
-imp <- readRDS("./output/station_bottom_temp_imputations.RDS")
+saveRDS(imp, paste0("./Output/", current.year, "/station_bottom_temp_imputations.RDS"))
+o.imp <- readRDS(paste0("./Output/", prev.year, "/station_bottom_temp_imputations.RDS"))
+imp <- readRDS(paste0("./Output/", current.year, "/station_bottom_temp_imputations.RDS"))
 
 imputed.temp <- data.frame()
 
@@ -217,6 +234,7 @@ plot.dat <- data.frame(year = c(1975:2019, 2021, 2022:current.year),
                        imputed.mean.temp = rowMeans(imputed.temp[,2:101]))
 
 add.temp <- dat %>%
+  mutate(year = as.numeric(as.character(year))) %>%
   group_by(year) %>%
   dplyr::summarize(observed.mean.temp = mean(bottom.temp, na.rm = T))
 
@@ -255,7 +273,7 @@ station.imputed.temp <- station.imputed.temp %>%
   rename(station = name)
 
 # now day
-imp <- readRDS("./output/station_julian_day_imputations.RDS")
+imp <- readRDS(paste0("./Output/", current.year, "/station_julian_day_imputations.RDS"))
 
 
 station.imputed.day <- data.frame()
@@ -302,5 +320,8 @@ ggplot(estimated.temp, aes(year, value)) +
   geom_point() + 
   geom_line()
 
-write.csv(estimated.temp, "./Output/date_corrected_bottom_temp.csv", row.names = F)
+write.csv(estimated.temp, paste0("./Output/", current.year, "/date_corrected_bottom_temp.csv"), row.names = F)
+pp <- read.csv(paste0("./Output/", prev.year, "/date_corrected_bottom_temp.csv"))
 
+plot(estimated.temp$value, type = "l")
+lines(pp$bottom.temp, col = "green")

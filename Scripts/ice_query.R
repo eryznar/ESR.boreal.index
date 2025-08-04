@@ -44,7 +44,7 @@ ice.years <- 1952:current.year
 
 # 3) PROCESS ICE FILES ----
   # Specify unique ice file names
-  ice.file <- paste0("./Data/Ice data/ERA5_ice_1952-", current.year, ".nc")
+  ice.file <- paste0("./Data/", current.year, "/ERA5_ice_1952-", current.year, ".nc")
 
   # Process ice data using tidync()
   tidync(ice.file) %>%
@@ -75,5 +75,5 @@ ice.years <- 1952:current.year
     
 
   # Save
-  write.csv(ice.dat, "./Output/ice.csv", row.names = FALSE)
+  write.csv(ice.dat, paste0("./Output/", current.year, "ice.csv", row.names = FALSE))
   

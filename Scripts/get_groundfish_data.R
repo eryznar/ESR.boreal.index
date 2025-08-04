@@ -1,7 +1,5 @@
-library(devtools)
-devtools::install_github("afsc-gap-products/gapindex")
-
-library(RODBC)
+# Load libs/params
+source("./Scripts/load_libs_params.R")
 
 PKG <- c("RODBC")
 for (p in PKG) {
