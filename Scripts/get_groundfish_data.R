@@ -9,16 +9,24 @@ for (p in PKG) {
 }
 
 channel<-odbcConnect(dsn = "AFSC",
-                     uid = "FILL IN", 
-                     pwd = "FILL IN", 
+                     uid = "ERYZNAR", 
+                     pwd = "T6wW#assword135$$", 
                      believeNRows = FALSE)
 
 odbcGetInfo(channel)
 
 
 #Or can also use with manual entry: 
-channel = gapindex::get_connected()
+channel = gapindex::get_connected(db = "AFSC") # THIS WILL NOT WORK ON A VM
 
+gapindex_data <- gapindex::get_data(
+  year_set = c(2007, 2009),
+  survey_set = "GOA",
+  spp_codes = 10261,   
+  haul_type = 3,
+  abundance_haul = "Y",
+  pull_lengths = T,
+  channel = "API")
 
 # Manipulate with SQL using AKFIN data before bringing into R ------------------
 # This will pull a final, completely formatted table for only EBS and NBS
