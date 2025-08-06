@@ -10,37 +10,34 @@ source("./Scripts/load_libs_params.R")
 ## data processing -------------------------------------
 
 #bloom timing
-d1 <- read.csv("./Output/bloom_timing.csv") %>%
+d1 <- read.csv(paste0("./Output/", prev.year, "/bloom_timing.csv")) %>%
   dplyr::select(!X)
 
 
 #bloom type  
-d2 <- read.csv("./Output/bloom_type.csv") %>%
+d2 <- read.csv(paste0("./Output/", prev.year, "/bloom_type.csv")) %>%
   dplyr::select(!X)
 
 #sea ice
-d3 <- read.csv("./Output/ice.csv") %>%
-  rename(`Jan-Feb ice cover` = JanFeb_ice,
-         `Mar-Apr ice cover` = MarApr_ice) %>%
-  filter(year >= 1972) %>%
-  pivot_longer(cols = -year)
+d3 <- read.csv(paste0("./Output/", prev.year, "/ice.csv"))
   
 #bottom temp
-d4 <- read.csv("./Output/date_corrected_bottom_temp.csv")  %>%
+d4 <- read.csv(paste0("./Output/", prev.year, "/date_corrected_bottom_temp.csv"))  %>%
   pivot_longer(cols = -year)
 
 #groundfish CPUE
-d5 <- read.csv("./Output/groundfish_mean_cpue.csv", row.names = 1) %>%
+d5 <- read.csv(paste0("./Output/", prev.year, "/groundfish_mean_cpue.csv"), row.names = 1) %>%
   rename(year = YEAR,
          `Pacific cod` = mean_cod_CPUE,
          `Arctic groundfish` = mean_arctic_CPUE) %>%
   pivot_longer(cols = -year)
 
 #zooplankton abundances
-d6 <- read.csv("./Output/summarized_zooplankton.csv") %>%
-  rename(name = taxa, 
-         value = log_abundance)
+d6 <- read.csv(paste0("./Output/", prev.year, "/sdmTMB_copepods.csv")) %>%
+  dplyr::select(!X) %>%
+  rename(value = log_abundance)
 
+# Combine all data
 dat <- rbind(d1, d2, d3, d4, d5, d6)
  
 # add NAs for plot
@@ -49,23 +46,21 @@ plot.dat <- dat %>%
               values_from = value) %>%
   pivot_longer(cols = -year)
 
-# change Calanus for plotting
-change <- plot.dat$name == "Calanus_glacialis"
-plot.dat$name[change] <- "Calanus"
+
 
 # reorder for plot
 plot.order <- data.frame(name = unique(plot.dat$name),
-                         order = c(3, 4, 5, 2, 1, 8, 6, 7))
+                         order = c(3, 4, 5, 2, 1, 8, 9, 6, 7))
 
 plot.dat <- left_join(plot.dat, plot.order)
 
-plot.dat$name <- dplyr::reorder(plot.dat$name, plot.dat$order)
+plot.dat$name <- reorder(plot.dat$name, plot.dat$order)
 
 plot.dat$name <- factor(plot.dat$name, levels = c("Jan-Feb ice cover", "Mar-Apr ice cover", "bottom.temp",
-                                                  "Open water bloom", "Bloom timing", "Pseudocalanus", "Calanus", "Pacific cod",
+                                                  "Open water bloom", "Bloom timing", "small copepods", "large copepods", "Pacific cod",
                                                   "Arctic groundfish"), 
                                        labels = c("Jan-Feb ice cover", "Mar-Apr ice cover", "Bottom temperature",
-                                                  "Open water bloom", "Bloom timing", "Pseudocalanus", "Calanus", "Pacific cod", 
+                                                  "Open water bloom", "Bloom timing", "Small copepods", "Large copepods", "Pacific cod", 
                                                   "Arctic groundfish"))
 
 # save as Extended Data Fig. 4
@@ -76,22 +71,20 @@ ggplot(plot.dat, aes(year, value)) +
   theme(axis.title.x = element_blank()) +
   ylab("Value")
 
-ggsave("./Figures/DFA_timeseries.png", width = 10, height = 6, units = 'in')
+ggsave(paste0("./Figures/", current.year, "/DFA_timeseries.png"), width = 10, height = 6, units = 'in')
 
 
-
-
-
-# save time series
-write.csv(dat, "./Output/dfa time series.csv", row.names = F)
+# Save time series
+write.csv(dat, paste0("./Output/", current.year, "/dfa time series.csv"), row.names = F)
 
 dfa.dat <- plot.dat %>%
+  dplyr::select(!order) %>%
   pivot_wider(names_from = name, values_from = value) %>% 
   arrange(year) %>%
   dplyr::select(-year) %>%
   t()
   
-colnames(dfa.dat) <- unique(d3$year)
+colnames(dfa.dat) <- sort(unique(plot.dat$year))
 
 # and plot correlations
 cors <- cor(t(dfa.dat), use = "p")

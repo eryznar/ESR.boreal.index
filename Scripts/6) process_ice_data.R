@@ -4,7 +4,7 @@
 
 # 1) LOAD LIBS/PARAMS ----
   
-source("./Scripts/load_libs_params.R")
+source("./Scripts/1) load_libs_params.R")
 
 ice.years <- 1952:current.year
 
@@ -38,7 +38,7 @@ ice.years <- 1952:current.year
     user     = user_id,
     request  = request,
     transfer = TRUE,
-    path     = "./Data/Ice data", # where do you want the data to be saved?
+    path     = paste0("./Data/", current.year, "/"), # where do you want the data to be saved?
     verbose = TRUE
   )
 
@@ -75,5 +75,5 @@ ice.years <- 1952:current.year
     
 
   # Save
-  write.csv(ice.dat, paste0("./Output/", current.year, "ice.csv", row.names = FALSE))
+  write.csv(ice.dat, paste0("./Output/", current.year, "/ice.csv"), row.names = FALSE)
   

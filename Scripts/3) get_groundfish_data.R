@@ -6,7 +6,7 @@ source("./Scripts/load_libs_params.R")
 channel <- gapindex::get_connected()
 
 uid = "ERYZNAR" 
-pwd = "T6wW#assword135$$"
+pwd = "daFFodilViolet100#"
 
 
 gf_data<- gapindex::get_data(

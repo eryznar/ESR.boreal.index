@@ -12,8 +12,12 @@ dat <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW
 
 #dat <- read.csv("C:/Users/emily.ryznar/Downloads/Calanus_Pseudo_Combined2.csv") # data DK said he sent Erin
 #dat2 <- read.csv("./Data/Calanus_Pseudo_Combined2.csv") # data from Erin originally shared via google sheets by DK
-dat2 <- read.csv("./Data/Calanus_Pseudo_Combined_2024_V2.csv") # new data DK provided
+dat2 <- read.csv(paste0("./Data/", prev.year, "/Calanus_Pseudo_Combined_2024_V2.csv")) # new data DK provided
 
+c1 <- read.csv(paste0("./Data/", prev.year, "/Copepods_GT2_spring_index.csv")) # new data DK provided
+c2 <- read.csv(paste0("./Data/", prev.year, "/Copepods_GT2_summer_index.csv")) # new data DK provided
+c3 <- read.csv(paste0("./Data/", prev.year, "/Copepods_LT2_spring_index.csv")) # new data DK provided
+c4 <- read.csv(paste0("./Data/", prev.year, "/Copepods_LT2_summer_index.csv")) # new data DK provided
 
 ##############################
 # Data wrangling
