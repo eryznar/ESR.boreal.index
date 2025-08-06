@@ -9,12 +9,12 @@ source("./Scripts/load_libs_params.R")
 ## LOAD DATA --------
 
   ## Groundfish specimen data
-  gf_catch <- read.csv("./Data/gf_cpue_timeseries_2024.csv")
+  gf_catch <- read.csv(paste0("./Data/", current.year, "/gf_cpue_timeseries.csv"))
 
   #Core immature snow crab stations
-  imm_area <- read.csv("./Output/imm_area_50perc.csv")
+  imm_area <- read.csv(paste0("./Output/", 2024, "/imm_area_50perc.csv"))
   
-  imm_stations <- pull(imm_area, GIS_STATION)
+  imm_stations <- pull(imm_area, STATION_ID)
   
 ## CALCULATE BIOMASS WITH IMM SNOW CRAB 50th PERCENTILE HOME RANGE --------
 
