@@ -23,14 +23,3 @@ gf_data<- gapindex::get_data(
 write.csv(x = a, 
           here::here(paste0("Data/", current.year, "/gf_cpue_timeseries.csv")))
 
-gapindex::upload_oracle(x = data.frame(A = 1),
-                        table_name = "test_table",
-                        metadata_column = data.frame(colname = "column A",
-                                                     colname_long = "column A",
-                                                     units = "NA",
-                                                     datatype = "NUMBER(10,0)",
-                                                     colname_desc = "value"),
-                        table_metadata = "this is a test table",
-                        channel = channel, ## replace with your channel object
-                        schema = "ERYZNAR" ## replace with your oracle username
-)
