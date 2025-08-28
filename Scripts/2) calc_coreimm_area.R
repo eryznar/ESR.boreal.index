@@ -12,7 +12,7 @@
   #avg core habitat across timeseries
 #Bottom temps need to be data corrected and imputed for final timeseries dataset
 
-source("./Scripts/load_libs_params.R")
+source("./Scripts/1) load_libs_params.R")
 
 ## EBS catch and haul data ----
 sc_dat <- crabpack::get_specimen_data(species = "SNOW", 
