@@ -19,7 +19,13 @@ gf_data<- gapindex::get_data(
             channel = channel)
 
 
+gf_cpue <- calc_cpue(gf_data)
 
-write.csv(x = a, 
-          here::here(paste0("Data/", current.year, "/gf_cpue_timeseries.csv")))
+haul <- gf_data$haul %>%
+            dplyr::select(CRUISEJOIN, HAULJOIN, STATIONID)
+
+gf_cpue <- right_join(gf_cpue, haul)
+
+
+write.csv(gf_cpue, paste0("Data/", current.year, "/gf_cpue_timeseries.csv"))
 

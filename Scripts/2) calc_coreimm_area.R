@@ -70,4 +70,4 @@ cpue %>%
       right_join(perc50) -> perc50_core
 
 #Write csv for stations in 50th percentile of avg CPUE  
-write.csv(perc50_core, file=paste0("./Output/imm_area_50perc", current.year, ".csv"))
+write.csv(perc50_core, file=paste0("./Output/", current.year, "/imm_area_50perc.csv"))

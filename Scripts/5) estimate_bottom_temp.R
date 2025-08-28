@@ -1,4 +1,4 @@
-source("./Scripts/load_libs_params.R")
+source("./Scripts/1) load_libs_params.R")
 
 dat <- read.csv(paste0("Y:/KOD_Survey/EBS Shelf/", 2024, "/Tech Memo/Data/HAUL_NEWTIMESERIES.csv"))
 dat25 <- read.csv("C:/Users/emily.ryznar/Downloads/EBS2025_HAUL.csv") %>%
@@ -10,22 +10,21 @@ dat25 <- read.csv("C:/Users/emily.ryznar/Downloads/EBS2025_HAUL.csv") %>%
         rbind(dat, .)
 
 dat <- dat25
-# ## EBS catch and haul data ----
-# cp_dat <- crabpack::get_specimen_data(species = "SNOW", 
-#                                       region = "EBS", 
-#                                       years = c(1975:2019, 2021:current.year),
-#                                       channel = "API")
-# cp_dat <- cp_dat$haul
+## EBS catch and haul data ----
+cp_dat <- crabpack::get_specimen_data(species = "RKC", # haul/bottom temp data for RKC spans until 1975
+                                      region = "EBS",
+                                      years = c(1975:2019, 2021:current.year),
+                                      channel = "API")
+cp_dat <- cp_dat$haul
 
 # load immature opilio core habitat
-imm_area <- read.csv(paste0("./Output/", prev.year, "/imm_area_50perc.csv"))
+imm_area <- read.csv(paste0("./Output/", current.year, "/imm_area_50perc.csv"))
 
 # plot what we have
-plot.dat <- dat %>%
-  select(SURVEY_YEAR, GIS_STATION, MID_LATITUDE, MID_LONGITUDE) %>%
+plot.dat <- cp_dat %>%
+  dplyr::select(YEAR, STATION_ID, MID_LATITUDE, MID_LONGITUDE) %>%
   rename(LATITUDE = MID_LATITUDE,
-         LONGITUDE = MID_LONGITUDE,
-         STATION_ID = GIS_STATION)
+         LONGITUDE = MID_LONGITUDE)
 
 # add imm_area
 add_area <- imm_area %>%
@@ -37,24 +36,24 @@ plot.dat <- left_join(plot.dat, add_area)
 change <- is.na(plot.dat$core)
 plot.dat$core[change] <- "non-core"
 
-ggplot(filter(plot.dat, SURVEY_YEAR <= 1982), aes(LONGITUDE, LATITUDE, color = core)) +
+ggplot(filter(plot.dat, YEAR <= 1982), aes(LONGITUDE, LATITUDE, color = core)) +
   geom_point() +
-  facet_wrap(~SURVEY_YEAR)
+  facet_wrap(~YEAR)
 
 # different names in different years??
 check79 <- plot.dat %>%
-  filter(SURVEY_YEAR == 1979,
+  filter(YEAR == 1979,
          core == "non-core")
 
 check80 <- plot.dat %>%
-  filter(SURVEY_YEAR == 1980,
+  filter(YEAR == 1980,
          core == "core")
 
 whats.this <- intersect(unique(check79$STATION_ID), unique(check80$STATION_ID)) # none
 
 # let's use a list of core stations sampled in 1977 to generate our bottom temp index
 use <- plot.dat %>%
-  filter(SURVEY_YEAR == 1975,
+  filter(YEAR == 1975,
           core == "core")
   
 use.stations <- use$STATION_ID
@@ -62,22 +61,22 @@ use.stations <- use$STATION_ID
 plot.dat <- plot.dat %>%
   filter(STATION_ID %in% use.stations)
 
-ggplot(filter(plot.dat, SURVEY_YEAR <= 1982), aes(LONGITUDE, LATITUDE, color = core)) +
+ggplot(filter(plot.dat, YEAR <= 1982), aes(LONGITUDE, LATITUDE, color = core)) +
   geom_point() +
-  facet_wrap(~SURVEY_YEAR)
+  facet_wrap(~YEAR)
 
 check <- plot.dat %>%
-  group_by(SURVEY_YEAR) %>%
+  group_by(YEAR) %>%
   summarise(missing = length(use.stations)-n())
 
 check
 
 # extract gear temp, date, year, gis_station
 
-dat <- dat %>%
-  mutate(julian=yday(parse_date_time(START_TIME, "d-m-y", "US/Alaska"))) %>%
-  select(julian, GEAR_TEMPERATURE, SURVEY_YEAR, GIS_STATION) %>%
-  rename(bottom.temp = GEAR_TEMPERATURE, year = SURVEY_YEAR, station = GIS_STATION) %>%
+dat <- cp_dat %>%
+  mutate(julian=yday(parse_date_time(START_DATE, "y-m-d", "US/Alaska"))) %>%
+  select(julian, GEAR_TEMPERATURE, YEAR, STATION_ID) %>%
+  rename(bottom.temp = GEAR_TEMPERATURE, year = YEAR, station = STATION_ID) %>%
   filter(station %in% use.stations)
 
 
@@ -135,15 +134,9 @@ saveRDS(imp, paste0("./Output/", current.year, "/station_julian_day_imputations.
 imp <- readRDS(paste0("./Output/", current.year, "/station_julian_day_imputations.RDS"))
 o.imp <- readRDS(paste0("./Output/", prev.year, "/station_julian_day_imputations.RDS"))
 
-str(imp$imp)
-
 View(complete(imp))
 
 # are there NAs in complete(imp)?
-
-check <- is.na(complete(o.imp))
-
-sum(check)
 check <- which(is.na(complete(imp)))
 check
 # this looks great....
@@ -206,8 +199,8 @@ colnames(dat.temp) <- str_remove_all(colnames(dat.temp), "-")
 
 imp <- mice(data = dat.temp, method = "norm.predict", m=100)#, pred = pred) #Using Bayesian linear regression method
 saveRDS(imp, paste0("./Output/", current.year, "/station_bottom_temp_imputations.RDS"))
-o.imp <- readRDS(paste0("./Output/", prev.year, "/station_bottom_temp_imputations.RDS"))
-imp <- readRDS(paste0("./Output/", current.year, "/station_bottom_temp_imputations.RDS"))
+# o.imp <- readRDS(paste0("./Output/", prev.year, "/station_bottom_temp_imputations.RDS"))
+# imp <- readRDS(paste0("./Output/", current.year, "/station_bottom_temp_imputations.RDS"))
 
 imputed.temp <- data.frame()
 
@@ -230,7 +223,7 @@ imputed.temp <- imputed.temp %>%
 
 # all are identical!
 
-plot.dat <- data.frame(year = c(1975:2019, 2021, 2022:current.year),
+plot.dat <- data.frame(year = c(1975:2019, 2021:current.year),
                        imputed.mean.temp = rowMeans(imputed.temp[,2:101]))
 
 add.temp <- dat %>%
@@ -312,7 +305,7 @@ annual.temp <- predict(mod$gam, newdata = newdat)
 
 
 estimated.temp <- data.frame(year = c(1975:current.year),
-                   bottom.temp = c(annual.temp[1:45], NA, annual.temp[46:length(annual.temp)])) %>%
+                   bottom.temp = c(annual.temp[1:45], NA, annual.temp[46:length(annual.temp)])) %>% # add in NA for 2020
                    rename(value = bottom.temp) %>%
                   mutate(name = "Bottom temperature")
 

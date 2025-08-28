@@ -1,89 +1,72 @@
 # Bottom temp ----
-old.bt <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/date_corrected_bottom_temp.csv") %>%
-          mutate(type = "old")
+old.bt <- read.csv(paste0("./Output/", prev.year, "/date_corrected_bottom_temp.csv")) %>%
+        mutate(type = "old", name = "Bottom temperature") %>%
+        rename(value = "bottom.temp")
 
-new.bt <- read.csv("./Output/date_corrected_bottom_temp.csv") %>%
-        mutate(type = "new")
+new.bt <- read.csv(paste0("./Output/", current.year, "/date_corrected_bottom_temp.csv")) %>%
+  mutate(type = "new")
 
-ggplot(rbind(old.bt, new.bt), aes(year, bottom.temp, color = type))+
+ggplot(rbind(old.bt, new.bt), aes(year, value, color = type))+
   geom_line()+
   geom_point()
 
 
 # Ice ----
-old.ice <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/ice.csv") %>%
+old.ice <- read.csv(paste0("./Output/", prev.year, "/ice.csv")) %>%
   mutate(type = "old")
 
-new.ice <- read.csv("./Output/ice.csv") %>%
+new.ice <- read.csv(paste0("./Output/", current.year, "/ice.csv")) %>%
   mutate(type = "new")
 
-ggplot(rbind(old.ice, new.ice), aes(year, JanFeb_ice, color = type))+
+ggplot(rbind(old.ice, new.ice) %>% filter(name == "Jan-Feb ice cover"), aes(year, value, color = type))+
   geom_line()+
   geom_point()
 
-ggplot(rbind(old.ice, new.ice), aes(year, MarApr_ice, color = type))+
+ggplot(rbind(old.ice, new.ice) %>% filter(name == "Mar-Apr ice cover"), aes(year, value, color = type))+
   geom_line()+
   geom_point()
 
 # Bloom type and timing ----
-old.bloomtime <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/bloom_timing.csv") %>%
-  filter(north_south == "south") %>%
-  rename(value = globcolour_peak_mean) %>%
-  mutate(name = "Bloom timing") %>%
-  dplyr::select(year, name, value) %>%
-  mutate(type = "old")
+old.bloomtime <- read.csv(paste0("./Output/", prev.year, "/bloom_timing.csv")) %>%
+      mutate(type = "old")
 
-new.bloomtime <- read.csv("./Output/bloom_timing.csv") %>%
-  mutate(type = "new") %>%
-  dplyr::select(!X)
+new.bloomtime <- read.csv(paste0("./Output/", current.year, "/bloom_timing.csv")) %>%
+  mutate(type = "new")
 
 ggplot(rbind(old.bloomtime, new.bloomtime), aes(year, value, color = type))+
   geom_line()+
   geom_point()
 
-old.bloomtype <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/bloom_type.csv") %>%
-  filter(north_south == "south") %>%
-  mutate(name = case_when(gl_type == "ice_full" ~ "Ice-edge bloom",
-                          gl_type == "ice_free" ~ "Open water bloom")) %>%
-  rename(value = count) %>%
-  dplyr::select(year, name, value)%>%
-  filter(name == "Open water bloom") %>%
+old.bloomtype <- read.csv(paste0("./Output/", prev.year, "/bloom_type.csv")) %>%
   mutate(type = "old")
 
-new.bloomtype <- read.csv("./Output/bloom_type.csv") %>%
-  mutate(type = "new") %>%
-  dplyr::select(!X)
+new.bloomtype <- read.csv(paste0("./Output/", current.year, "/bloom_type.csv")) %>%
+  mutate(type = "new")
 
 ggplot(rbind(old.bloomtype, new.bloomtype), aes(year, value, color = type))+
   geom_line()+
   geom_point()
 
 # Groundfish biomass ----
-old.gf <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/groundfish_mean_cpue.csv") %>%
-        mutate(type = "old")
+old.gf <- read.csv(paste0("./Output/", prev.year, "/groundfish_mean_cpue.csv")) %>%
+        mutate(type = "old") %>%
+        rename('Pacific cod' = mean_cod_CPUE,
+               'Arctic groundfish' = mean_arctic_CPUE,
+               year = YEAR) %>%
+        dplyr::select(!X) %>%
+        pivot_longer(cols = 2:3)
 
-new.gf <- read.csv("./Output/groundfish_mean_cpue.csv") %>%
-  mutate(type = "new") 
+new.gf <- read.csv(paste0("./Output/", current.year, "/groundfish_mean_cpue.csv")) %>%
+  mutate(type = "new") %>%
+  dplyr::select(!X)
 
-ggplot(rbind(old.gf, new.gf), aes(YEAR, mean_cod_CPUE, color = type))+ # won't match bc diff core area and units
+ggplot(rbind(old.gf, new.gf) %>% filter(name == "Pacific cod"), aes(year, value, color = type))+ # won't match bc diff core area and units
   geom_line()+
   geom_point()
 
-ggplot(rbind(old.gf, new.gf), aes(YEAR, mean_arctic_CPUE, color = type))+ # won't match bc diff core area and units
+ggplot(rbind(old.gf, new.gf) %>% filter(name == "Arctic groundfish"), aes(year, value, color = type))+ # won't match bc diff core area and units
   geom_line()+
   geom_point()
 
 # Zooplankton ----
-old.zoop <- read.csv("C:/Users/emily.ryznar/Work/Documents/Boreal opie/boreal-opieNEW/Data/summarized_zooplankton.csv") %>%
-            mutate(type = "old")
 
-new.zoop <- read.csv("./Output/summarized_zooplankton.csv") %>%
-  mutate(type = "new") 
-
-ggplot(rbind(old.zoop, new.zoop) %>% filter(taxa == "Pseudocalanus"), aes(year, log_abundance, color = type))+ 
-  geom_line()+
-  geom_point()
-
-ggplot(rbind(old.zoop, new.zoop) %>% filter(taxa == "Calanus_glacialis"), aes(year, log_abundance, color = type))+ 
-  geom_line()+
-  geom_point()
