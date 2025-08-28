@@ -137,7 +137,7 @@ model.data <- model.data %>%
 model.data # UNCONSTRAINED MODELS DID NOT CONVERGE
 
 # save model selection table--note that unconstrained models did not converge!
-write.csv(model.data, "./Output/dfa_model_selection_table.csv",
+write.csv(model.data, paste0("./Output/", current.year, "/dfa_model_selection_table.csv"),
           row.names = F)
 
 ## fit the best model --------------------------------------------------
@@ -192,8 +192,8 @@ loadings.plot <- ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
   geom_hline(yintercept = 0)
 
 # plot trend
-trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:current.year)),
-                    t=1972:current.year,
+trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:prev.year)),
+                    t=1972:prev.year,
                     estimate=as.vector(mod$states),
                     conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
                     conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
@@ -206,7 +206,7 @@ trend.plot <- ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
   geom_point() +
   geom_ribbon(aes(x=t, ymin=conf.low, ymax=conf.high), linetype=0, alpha=0.1) + xlab("") + ylab("Trend")
 
- ggsave("./Figures/best_two_trend_DFA_loadings_trend.png", width = 9, height = 3.5, units = 'in')
+ ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
 
 # save
 ggpubr::ggarrange(loadings.plot,
@@ -223,18 +223,18 @@ model.list = list(A="zero", m=1, R="diagonal and unequal") # third-best model - 
 mod = MARSS(dfa.dat, model=model.list, z.score=TRUE, form="dfa", control=cntl.list)
 
 # save 
-saveRDS(mod, "./Output/DFA_model.rds")
+saveRDS(mod, paste0("./Output/", current.year, "/DFA_model.rds"))
 
 # plot fits to data
 DFA_pred <- print(predict(mod))
 
 DFA_pred <- DFA_pred %>%
-  mutate(year = rep(1972:current.year, length(unique(DFA_pred$.rownames)))) 
+  mutate(year = rep(1972:prev.year, length(unique(DFA_pred$.rownames)))) 
 
 # get R^2 for each time series
 summarise <- DFA_pred %>%
   group_by(.rownames) %>%
-  summarise(R_sq = cor(y, estimate, use = "pairwise")^2) %>%
+  reframe(R_sq = cor(y, estimate, use = "pairwise")^2) %>%
   mutate(plot_label = paste(.rownames, " (", round(R_sq, 3), ")", sep = ""))
 
 DFA_pred <- left_join(DFA_pred, summarise)
@@ -246,7 +246,7 @@ ggplot(DFA_pred, aes(estimate, y)) +
   facet_wrap(~plot_label, ncol = 4, scale = "free") +
   labs(x = "Estimated", y = "Observed")
 
-ggsave("./Figures/DFA.BI_tsfits.png", width = 10, height = 6, units = 'in')
+ggsave(paste0("./Figures/", current.year, "/DFA.BI_tsfits.png"), width = 10, height = 6, units = 'in')
 
 
 # process loadings and trend
@@ -265,7 +265,7 @@ plot.CI$names <- reorder(plot.CI$names, CI$par$Z[1:length(unique(plot.CI$names))
 
 
 # plot trend
-trend <- data.frame(t=1972:current.year,
+trend <- data.frame(t=1972:prev.year,
                         estimate=as.vector(mod$states),
                         conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
                         conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
@@ -273,5 +273,7 @@ trend <- data.frame(t=1972:current.year,
 
 
 # and save loadings and trend
-write.csv(plot.CI, "./Output/dfa_loadings.csv", row.names = F)
-write.csv(trend, "./Output/dfa_trend.csv", row.names = F)
+write.csv(plot.CI, paste0("./Output/", current.year, "/dfa_loadings.csv"), row.names = F)
+write.csv(trend, paste0("./Output/", current.year, "/dfa_trend.csv"), row.names = F)
+
+          
