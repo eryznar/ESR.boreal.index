@@ -1,7 +1,7 @@
 # combine multiple indicators of borealization with 
 # a Dynamic Factor Analysis model
 
-source("./Scripts/load_libs_params.R")
+source("./Scripts/1) load_libs_params.R")
 
 # Updated 9/4/24 with 2024 data by ERR
 
@@ -10,27 +10,23 @@ source("./Scripts/load_libs_params.R")
 ## data processing -------------------------------------
 
 #bloom timing
-d1 <- read.csv(paste0("./Output/", prev.year, "/bloom_timing.csv")) %>%
+d1 <- read.csv(paste0("./Output/", current.year, "/bloom_timing.csv")) %>%
   dplyr::select(!X)
 
 
 #bloom type  
-d2 <- read.csv(paste0("./Output/", prev.year, "/bloom_type.csv")) %>%
+d2 <- read.csv(paste0("./Output/", current.year, "/bloom_type.csv")) %>%
   dplyr::select(!X)
 
 #sea ice
-d3 <- read.csv(paste0("./Output/", prev.year, "/ice.csv"))
+d3 <- read.csv(paste0("./Output/", current.year, "/ice.csv"))
   
 #bottom temp
-d4 <- read.csv(paste0("./Output/", prev.year, "/date_corrected_bottom_temp.csv"))  %>%
-  pivot_longer(cols = -year)
+d4 <- read.csv(paste0("./Output/", current.year, "/date_corrected_bottom_temp.csv"))
 
 #groundfish CPUE
-d5 <- read.csv(paste0("./Output/", prev.year, "/groundfish_mean_cpue.csv"), row.names = 1) %>%
-  rename(year = YEAR,
-         `Pacific cod` = mean_cod_CPUE,
-         `Arctic groundfish` = mean_arctic_CPUE) %>%
-  pivot_longer(cols = -year)
+d5 <- read.csv(paste0("./Output/", current.year, "/groundfish_mean_cpue.csv")) %>%
+  dplyr::select(!X)
 
 #zooplankton abundances
 d6 <- read.csv(paste0("./Output/", prev.year, "/sdmTMB_copepods.csv")) %>%
@@ -56,7 +52,7 @@ plot.dat <- left_join(plot.dat, plot.order)
 
 plot.dat$name <- reorder(plot.dat$name, plot.dat$order)
 
-plot.dat$name <- factor(plot.dat$name, levels = c("Jan-Feb ice cover", "Mar-Apr ice cover", "bottom.temp",
+plot.dat$name <- factor(plot.dat$name, levels = c("Jan-Feb ice cover", "Mar-Apr ice cover", "Bottom temperature",
                                                   "Open water bloom", "Bloom timing", "small copepods", "large copepods", "Pacific cod",
                                                   "Arctic groundfish"), 
                                        labels = c("Jan-Feb ice cover", "Mar-Apr ice cover", "Bottom temperature",
@@ -112,7 +108,7 @@ cntl.list = list(minit=200, maxit=20000, allow.degen=FALSE, conv.test.slope.tol=
 # fit models & store results
 for(R in levels.R) {
   for(m in 1:2) {  # considering either 1- or 2-trend model
-    
+    print(paste0("fitting level ", R, ", m=", m))
     dfa.model = list(A="zero", R=R, m=m)
     
     kemz = MARSS(dfa.dat, model=dfa.model,
@@ -189,11 +185,11 @@ loadings.plot <- ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
   ylab("Loading") +
   xlab("") +
   theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0) #only one doesn't overlap zero
 
 # plot trend
-trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:prev.year)),
-                    t=1972:prev.year,
+trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:current.year)),
+                    t=1972:current.year,
                     estimate=as.vector(mod$states),
                     conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
                     conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
@@ -206,7 +202,7 @@ trend.plot <- ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
   geom_point() +
   geom_ribbon(aes(x=t, ymin=conf.low, ymax=conf.high), linetype=0, alpha=0.1) + xlab("") + ylab("Trend")
 
- ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
+ #ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
 
 # save
 ggpubr::ggarrange(loadings.plot,
@@ -218,7 +214,7 @@ ggpubr::ggarrange(loadings.plot,
 # only two loadings (?) can be distinguished from 0! 
 # reject this model and fit second-best model (1 trend diagonal and unequal)
 
-model.list = list(A="zero", m=1, R="diagonal and unequal") # third-best model - this is the borealization index
+model.list = list(A="zero", m=1, R="diagonal and unequal") # fourth best model that converged - this is the borealization index
 
 mod = MARSS(dfa.dat, model=model.list, z.score=TRUE, form="dfa", control=cntl.list)
 
@@ -229,7 +225,7 @@ saveRDS(mod, paste0("./Output/", current.year, "/DFA_model.rds"))
 DFA_pred <- print(predict(mod))
 
 DFA_pred <- DFA_pred %>%
-  mutate(year = rep(1972:prev.year, length(unique(DFA_pred$.rownames)))) 
+  mutate(year = rep(1972:current.year, length(unique(DFA_pred$.rownames)))) 
 
 # get R^2 for each time series
 summarise <- DFA_pred %>%
@@ -265,11 +261,28 @@ plot.CI$names <- reorder(plot.CI$names, CI$par$Z[1:length(unique(plot.CI$names))
 
 
 # plot trend
-trend <- data.frame(t=1972:prev.year,
+trend <- data.frame(t=1972:current.year,
                         estimate=as.vector(mod$states),
                         conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
                         conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
 
+trend.plot <- ggplot(trend, aes(t, estimate))+
+                geom_ribbon(mapping = aes(ymin = conf.low, ymax = conf.high), fill = "lightblue", alpha = 0.4)+
+                geom_line(linewidth = 1, color = "dodgerblue3")+
+                geom_point(color = "dodgerblue3", size = 2)+
+                ylab("Borealization index")+
+                xlab("Year")
+
+loadings.plot <- ggplot(plot.CI, aes(x=names, y=mean)) +
+  geom_bar(position=dodge, stat="identity", fill = "dodgerblue3") +
+  geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5) +
+  ylab("Loading") +
+  xlab("") +
+  theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
+  geom_hline(yintercept = 0) 
+
+ggsave(plot = trend.plot, paste0("./Figures/", current.year, "/borealization_index_plot.png"), width = 7, height = 5, units = "in")
+ggsave(plot = loadings.plot, paste0("./Figures/", current.year, "/loadings_plot.png"), width = 7, height = 5, units = "in")
 
 
 # and save loadings and trend
