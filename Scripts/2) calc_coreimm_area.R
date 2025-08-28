@@ -44,7 +44,7 @@ ggplot() +
   #will be biased in these years 
 
 #Calculate CPUE by station for all immature snow crab 
-cpue <- calc_cpue(crab_data = sc_dat,
+cpue <- crabpack::calc_cpue(crab_data = sc_dat,
                   species = "SNOW",
                   crab_category = c("all_categories"), # error when specifying small_male and immature_female directly
                   rm_corners = TRUE, # exclude corner stations
