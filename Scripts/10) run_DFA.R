@@ -179,11 +179,12 @@ plot.CI$names <- reorder(plot.CI$names, plot.CI$mean)
 
 plot.CI$trend <- rep(c("T1", "T2"), each = length(unique(plot.CI$names)))
 
-loadings.plot <- ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
+ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
   geom_bar(position=dodge, stat="identity") +
   geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5) +
   ylab("Loading") +
   xlab("") +
+  ggtitle("diagonal and unequal, m=2")+
   theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
   geom_hline(yintercept = 0) #only one doesn't overlap zero
 
@@ -195,25 +196,157 @@ trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:current.year))
                     conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
 
 
-trend.plot <- ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
+ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
   theme_bw() +
   geom_line() +
+  ggtitle("diagonal and unequal, m=2")+
   geom_hline(yintercept = 0) +
   geom_point() +
   geom_ribbon(aes(x=t, ymin=conf.low, ymax=conf.high), linetype=0, alpha=0.1) + xlab("") + ylab("Trend")
 
- #ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
-
-# save
-ggpubr::ggarrange(loadings.plot,
-                  trend.plot,
-                  ncol = 2,
-                  widths = c(0.45, 0.55),
-                  labels = "auto")
-
 # only two loadings (?) can be distinguished from 0! 
-# reject this model and fit second-best model (1 trend diagonal and unequal)
 
+# Fit second best model ---------
+model.list = list(A="zero", m=2, R="diagonal and equal") # best model is two-trend
+
+# not sure that these changes to control list are needed for this best model, but using them again!
+cntl.list = list(minit=200, maxit=20000, allow.degen=FALSE, conv.test.slope.tol=0.1, abstol=0.0001)
+
+mod = MARSS(dfa.dat, model=model.list, z.score=TRUE, form="dfa", control=cntl.list)
+
+# rotate
+# get the inverse of the rotation matrix
+Z.est <- coef(mod, type = "matrix")$Z
+
+H.inv <- varimax(coef(mod, type = "matrix")$Z)$rotmat
+
+# rotate factor loadings
+Z.rot <- Z.est %*% H.inv
+
+# rotate trends
+trends.rot <- solve(H.inv) %*% mod$states
+
+# Add CIs to marssMLE object
+mod <- MARSSparamCIs(mod)
+
+# Use coef() to get the upper and lower CIs
+Z.low <- coef(mod, type = "Z", what = "par.lowCI")
+Z.up <- coef(mod, type = "Z", what = "par.upCI")
+Z.rot.up <- Z.up %*% H.inv
+Z.rot.low <- Z.low %*% H.inv
+
+plot.CI <- data.frame(names=rownames(dfa.dat),
+                      mean = as.vector(Z.rot),
+                      upCI = as.vector(Z.rot.up),
+                      lowCI = as.vector(Z.rot.low)
+)
+plot.CI
+
+dodge <- position_dodge(width=0.9)
+
+plot.CI$names <- reorder(plot.CI$names, plot.CI$mean)
+
+
+plot.CI$trend <- rep(c("T1", "T2"), each = length(unique(plot.CI$names)))
+
+ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
+  geom_bar(position=dodge, stat="identity") +
+  geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5) +
+  ylab("Loading") +
+  xlab("") +
+  ggtitle("diagonal and equal, m=2")+
+  theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
+  geom_hline(yintercept = 0) #only one doesn't overlap zero
+
+# plot trend
+trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:current.year)),
+                    t=1972:current.year,
+                    estimate=as.vector(mod$states),
+                    conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
+                    conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
+
+
+ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
+  theme_bw() +
+  geom_line() +
+  ggtitle("diagonal and equal, m=2")+
+  geom_hline(yintercept = 0) +
+  geom_point() +
+  geom_ribbon(aes(x=t, ymin=conf.low, ymax=conf.high), linetype=0, alpha=0.1) + xlab("") + ylab("Trend")
+
+#ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
+
+# Fit third best model ---------
+model.list = list(A="zero", m=2, R="equalvarcov") # best model is two-trend
+
+# not sure that these changes to control list are needed for this best model, but using them again!
+cntl.list = list(minit=200, maxit=20000, allow.degen=FALSE, conv.test.slope.tol=0.1, abstol=0.0001)
+
+mod = MARSS(dfa.dat, model=model.list, z.score=TRUE, form="dfa", control=cntl.list)
+
+# rotate
+# get the inverse of the rotation matrix
+Z.est <- coef(mod, type = "matrix")$Z
+
+H.inv <- varimax(coef(mod, type = "matrix")$Z)$rotmat
+
+# rotate factor loadings
+Z.rot <- Z.est %*% H.inv
+
+# rotate trends
+trends.rot <- solve(H.inv) %*% mod$states
+
+# Add CIs to marssMLE object
+mod <- MARSSparamCIs(mod)
+
+# Use coef() to get the upper and lower CIs
+Z.low <- coef(mod, type = "Z", what = "par.lowCI")
+Z.up <- coef(mod, type = "Z", what = "par.upCI")
+Z.rot.up <- Z.up %*% H.inv
+Z.rot.low <- Z.low %*% H.inv
+
+plot.CI <- data.frame(names=rownames(dfa.dat),
+                      mean = as.vector(Z.rot),
+                      upCI = as.vector(Z.rot.up),
+                      lowCI = as.vector(Z.rot.low)
+)
+plot.CI
+
+dodge <- position_dodge(width=0.9)
+
+plot.CI$names <- reorder(plot.CI$names, plot.CI$mean)
+
+
+plot.CI$trend <- rep(c("T1", "T2"), each = length(unique(plot.CI$names)))
+
+ggplot(plot.CI, aes(x=names, y=mean, fill = trend)) +
+  geom_bar(position=dodge, stat="identity") +
+  geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5) +
+  ylab("Loading") +
+  xlab("") +
+  ggtitle("equalvarcov, m=2")+
+  theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
+  geom_hline(yintercept = 0) #only one doesn't overlap zero
+
+# plot trend
+trend <- data.frame(trend = rep(c("T1", "T2"), each = length(1972:current.year)),
+                    t=1972:current.year,
+                    estimate=as.vector(mod$states),
+                    conf.low=as.vector(mod$states)-1.96*as.vector(mod$states.se),
+                    conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
+
+
+ggplot(trend, aes(t, estimate, color = trend, fill = trend)) +
+  theme_bw() +
+  geom_line() +
+  ggtitle("equalvarcov, m=2")+
+  geom_hline(yintercept = 0) +
+  geom_point() +
+  geom_ribbon(aes(x=t, ymin=conf.low, ymax=conf.high), linetype=0, alpha=0.1) + xlab("") + ylab("Trend")
+
+#ggsave(paste0("./Figures/", current.year, "/best_two_trend_DFA_loadings_trend.png"), width = 9, height = 3.5, units = 'in')
+
+# Fit fourth best model ----
 model.list = list(A="zero", m=1, R="diagonal and unequal") # fourth best model that converged - this is the borealization index
 
 mod = MARSS(dfa.dat, model=model.list, z.score=TRUE, form="dfa", control=cntl.list)
