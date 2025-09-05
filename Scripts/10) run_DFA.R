@@ -29,7 +29,7 @@ d5 <- read.csv(paste0("./Output/", current.year, "/groundfish_mean_cpue.csv")) %
   dplyr::select(!X)
 
 #zooplankton abundances
-d6 <- read.csv(paste0("./Output/", prev.year, "/sdmTMB_copepods.csv")) %>%
+d6 <- read.csv(paste0("./Output/", current.year, "/sdmTMB_copepods.csv")) %>%
   dplyr::select(!X) %>%
   rename(value = log_abundance)
 
@@ -400,22 +400,32 @@ trend <- data.frame(t=1972:current.year,
                         conf.high=as.vector(mod$states)+1.96*as.vector(mod$states.se))
 
 trend.plot <- ggplot(trend, aes(t, estimate))+
+                geom_hline(yintercept = 0, linewidth = 1)+
                 geom_ribbon(mapping = aes(ymin = conf.low, ymax = conf.high), fill = "lightblue", alpha = 0.4)+
                 geom_line(linewidth = 1, color = "dodgerblue3")+
                 geom_point(color = "dodgerblue3", size = 2)+
                 ylab("Borealization index")+
-                xlab("Year")
+                xlab("Year")+
+                theme(axis.text.x  = element_text(size=12), 
+                      legend.title = element_blank(), 
+                      legend.position = 'top',
+                      axis.text.y = element_text(size = 12),
+                      axis.title = element_text(size = 12))
 
 loadings.plot <- ggplot(plot.CI, aes(x=names, y=mean)) +
   geom_bar(position=dodge, stat="identity", fill = "dodgerblue3") +
-  geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5) +
+  geom_errorbar(aes(ymax=upCI, ymin=lowCI), position=dodge, width=0.5, linewidth = 0.5) +
   ylab("Loading") +
   xlab("") +
-  theme(axis.text.x  = element_text(angle=60, hjust=1,  size=9), legend.title = element_blank(), legend.position = 'top') +
+  theme(axis.text.x  = element_text(angle=60, hjust=1,  size=12), 
+        legend.title = element_blank(), 
+        legend.position = 'top',
+        axis.text.y = element_text(size = 12),
+        axis.title = element_text(size = 12)) +
   geom_hline(yintercept = 0) 
 
-ggsave(plot = trend.plot, paste0("./Figures/", current.year, "/borealization_index_plot.png"), width = 7, height = 5, units = "in")
-ggsave(plot = loadings.plot, paste0("./Figures/", current.year, "/loadings_plot.png"), width = 7, height = 5, units = "in")
+ggsave(plot = trend.plot, paste0("./Figures/", current.year, "/borealization_index_plot.png"), width = 6, height = 4, units = "in")
+ggsave(plot = loadings.plot, paste0("./Figures/", current.year, "/loadings_plot.png"), width = 3, height = 5, units = "in")
 
 
 # and save loadings and trend
